@@ -48,8 +48,8 @@ shadowapi/
 ### Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/shadowapi.git
-cd shadowapi
+git clone https://github.com/imramen07/ShadowAPI.git
+cd ShadowAPI
 ```
 
 ### Create a virtual environment

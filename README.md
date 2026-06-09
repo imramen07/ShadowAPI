@@ -1,134 +1,234 @@
 # ShadowAPI
 
-A modern FastAPI boilerplate designed for building scalable and production-ready REST APIs with minimal setup.
+ShadowAPI is a lightweight API proxy that automatically records responses from upstream APIs and serves cached responses when the upstream service becomes unavailable.
+
+Built as a learning project focused on backend systems, caching, resilience, and API infrastructure.
 
 ---
 
 ## Features
 
-* FastAPI-powered backend
-* Modular project structure
-* Structured logging
-* Response caching support
-* Middleware integration
-* Environment-based configuration
-* Clean architecture for easy maintenance
-* Auto-generated API documentation
-* Ready for deployment and future scaling
+### Reverse Proxy
+
+Forward requests to an upstream API with zero changes required in the client application.
+
+### Response Recording
+
+Automatically stores successful API responses in a local SQLite database.
+
+### Shadow Mode
+
+When the upstream API becomes unavailable, ShadowAPI switches to Shadow Mode and serves previously cached responses.
+
+### Route Discovery
+
+Tracks and stores requested API routes for inspection and debugging.
+
+### Dashboard Endpoints
+
+Monitor cached routes and ShadowAPI status through built-in dashboard endpoints.
+
+---
+
+## Architecture
+
+```text
+Client
+   │
+   ▼
+ShadowAPI
+   │
+   ├── Live Mode
+   │      │
+   │      ▼
+   │  Upstream API
+   │      │
+   │      ▼
+   │  Save Response
+   │
+   └── Shadow Mode
+          │
+          ▼
+     SQLite Cache
+          │
+          ▼
+     Cached Response
+```
+
+---
+
+## Tech Stack
+
+* FastAPI
+* SQLAlchemy
+* SQLite
+* HTTPX
+* Uvicorn
 
 ---
 
 ## Project Structure
 
 ```text
-shadowapi/
+ShadowAPI/
+│
 ├── app/
 │   ├── core/
-│   │    └── logger.py
-│   ├── dash/
-│   │    └── dash_router.py
+│   │   └── logger.py
+│   │
+│   ├── dashboard/
+│   │   └── router.py
+│   │
 │   ├── proxy/
-│   │    ├── forwarder.py
-│   │    ├── router.py
-│   │    └── shadow.py
+│   │   ├── router.py
+│   │   ├── forwarder.py
+│   │   └── shadow.py
+│   │
 │   ├── storage/
-│   │    ├── crud.py
-│   │    ├── database.py
-│   │    └── models.py
+│   │   ├── database.py
+│   │   ├── models.py
+│   │   └── crud.py
+│   │
 │   └── main.py
-├── run.py
-├── requirements.txt
-└── README.md
+│
+└── shadow.db
 ```
 
 ---
 
-## Installation
+## Dashboard Endpoints
 
-### Clone the repository
+### Service Status
+
+```http
+GET /shadow/status
+```
+
+Example Response:
+
+```json
+{
+  "service": "ShadowAPI",
+  "status": "running"
+}
+```
+
+### Cached Routes
+
+```http
+GET /shadow/routes
+```
+
+Returns all recorded routes stored in the cache.
+
+### Statistics
+
+```http
+GET /shadow/stats
+```
+
+Returns ShadowAPI statistics and cache information.
+
+---
+
+## How It Works
+
+### Live Mode
+
+1. Request arrives.
+2. ShadowAPI forwards request to upstream API.
+3. Response is returned to client.
+4. Response is stored in SQLite.
+
+### Shadow Mode
+
+1. Upstream API becomes unavailable.
+2. ShadowAPI detects the failure.
+3. Cached response is retrieved from SQLite.
+4. Response is served to the client.
+
+---
+
+## Running Locally
+
+Clone the repository:
 
 ```bash
 git clone https://github.com/imramen07/ShadowAPI.git
 cd ShadowAPI
 ```
 
-### Create a virtual environment
+Create a virtual environment:
 
 ```bash
-python -m venv venv
+python -m venv .venv
 ```
 
-Activate the environment:
-
-**Windows**
+Activate it:
 
 ```bash
-venv\Scripts\activate
+.venv\Scripts\activate
 ```
 
-**Linux / macOS**
-
-```bash
-source venv/bin/activate
-```
-
-### Install dependencies
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
----
-
-## Running the Server
+Run the server:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-The API will be available at:
+Server will start at:
 
 ```text
-http://127.0.0.1:8000
+http://localhost:8000
 ```
 
 ---
 
-## API Documentation
+## Roadmap
 
-FastAPI automatically generates documentation:
+### v0.1
 
-### Swagger UI
+* Reverse Proxy
+* SQLite Cache
+* Shadow Fallback
+* Dashboard Endpoints
 
-```text
-http://127.0.0.1:8000/docs
-```
+### v0.2
 
-### ReDoc
+* Metrics System
+* Cache Hit/Miss Tracking
+* TTL Expiration
 
-```text
-http://127.0.0.1:8000/redoc
-```
+### v0.3
 
----
+* POST/PUT Support
+* Stateful Mock Responses
 
-## Logging
+### v1.0
 
-ShadowAPI includes structured logging to help monitor requests, errors, and application events during development and production.
-
----
-
-## Caching
-
-Caching support is included to improve response times and reduce unnecessary processing for frequently accessed endpoints.
-
----
-
-## Why ShadowAPI?
-
-ShadowAPI provides a solid foundation for backend development without forcing unnecessary complexity. It is ideal for learning FastAPI, building personal projects, hackathon applications, and production services.
+* Intelligent API Shadowing
+* Route Parameterization
+* Automatic Schema Learning
+* Advanced Failure Simulation
 
 ---
 
-### Author - Ramen
-### GitHub - imramen07
+## Motivation
+
+Modern applications depend heavily on third-party APIs and microservices. Development often comes to a halt when these services become unavailable.
+
+ShadowAPI aims to reduce this dependency by learning API responses during normal operation and providing cached fallbacks when services fail.
+
+---
+
+## Author
+
+**Ramen**
+
+GitHub: https://github.com/imramen07

@@ -1,15 +1,15 @@
 import httpx
-
-TARGET_URL = "https://brokenapi123456.com"
+from app.core.config import settings
 
 async def forwardrequest(
         method: str,
         path: str,
+        upstream_url: str,
         headers: dict = None,
         params: dict = None,
         content: bytes = None
 ):
-    url = f"{TARGET_URL}{path}"
+    url = f"{upstream_url}{path}"
 
     async with httpx.AsyncClient() as client:
         response = await client.request(
@@ -18,7 +18,7 @@ async def forwardrequest(
             headers = headers,
             params = params,
             content = content,
-            timeout = 10.0
+            timeout = settings.req_timeout
         )
     
     return response

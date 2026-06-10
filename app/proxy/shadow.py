@@ -23,5 +23,5 @@ def get_shadow_response(
     return Response(
         content = record.response_body.encode("utf-8"),
         status_code = record.status_code,
-        content_type = record.content_type or "application/json"
+        media_type = record.content_type or "application/json"
     )

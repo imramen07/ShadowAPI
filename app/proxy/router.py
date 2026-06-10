@@ -10,19 +10,22 @@ from app.storage.database import get_db
 from app.storage.crud import saverecord
 from app.proxy.shadow import get_shadow_response
 from app.core.logger import logger
+from app.proxy.auth import get_this_tenant
+from app.storage.models import Tenant
 
 router = APIRouter()
 
 @router.api_route(
     "/{path:path}",
-    methods = ["GET"]
+    methods = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]
 )
 async def proxy(
     path: str,
     request: Request,
+    tenant: Tenant = Depends(get_this_tenant),
     db: Session = Depends(get_db)
 ):
-    fpath = f"/{path}"
+    fpath = f"/{path}" if path else "/"
     try:
         #extract params, headers, body
         params = dict(request.query_params)
@@ -32,38 +35,39 @@ async def proxy(
         response = await forwardrequest(
             method = request.method,
             path = fpath,
+            upstream_url = tenant.upstream_url,
             headers = headers,
             params = params,
             content = body
         )
-        logger.info(f"Live Mode: {request.method} /{path}")
+        logger.info(f"Live Mode: {tenant.id} - {request.method} {fpath}")
         saverecord(
             db =  db,
+            tenant_id = tenant.id,
             method = request.method,
             path = fpath,
             status_code = response.status_code,
-            response_body = response.text
+            response_body = response.text,
+            content_type = response.headers.get("content-type")
         )
 
         return Response(
             content = response.content,
             status_code = response.status_code,
-            media = response.headers.get("content-type")
+            media_type = response.headers.get("content-type")
         )
     
     except (httpx.HTTPError, Exception) as e:
-        logger.error(f"Upstream Error/Timeout: {str(e)}. Switching to Shadow Mode.")
-        logger.info(f"Shadow Mode: {request.method} /{fpath}")
-        shadow = get_shadow_response(
+        logger.error(f"Upstream Error/Timeout: {tenant.id} {str(e)}. Switching to Shadow Mode.")
+        logger.info(f"Shadow Mode: {tenant.id} - {request.method} /{fpath}")
+        shadow_resp = get_shadow_response(
             db = db,
+            tenant_id = tenant.id,
             method = request.method,
             path = fpath
         )
-        if shadow:
-            return JSONResponse(
-                content = shadow["body"],
-                status_code = shadow["status_code"]
-            )
+        if shadow_resp:
+            return shadow_resp
         return JSONResponse(
             status_code = 503,
             content = {

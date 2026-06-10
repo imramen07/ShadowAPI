@@ -11,6 +11,6 @@ class APIrecord(Base):
     id = Column(Integer, primary_key = True)
     method = Column(String, nullable = False)
     path = Column(String, nullable = False)
-    status_code = Column(Text)
+    status_code = Column(Integer)
     response_body = Column(Text)
     created_at = Column(DateTime, default = lambda: datetime.now(UTC))

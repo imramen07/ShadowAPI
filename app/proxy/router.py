@@ -1,10 +1,10 @@
 from fastapi import APIRouter
 from fastapi import Request
 from fastapi import Depends
+from fastapi import Response
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 import httpx
-from fastapi.responses import JSONResponse
 from app.proxy.forwarder import forwardrequest
 from app.storage.database import get_db
 from app.storage.crud import saverecord
@@ -22,28 +22,42 @@ async def proxy(
     request: Request,
     db: Session = Depends(get_db)
 ):
+    fpath = f"/{path}"
     try:
+        #extract params, headers, body
+        params = dict(request.query_params)
+        headers = dict(request.headers)
+        body = await request.body()
+
         response = await forwardrequest(
-            request.method,
-            f"/{path}"
+            method = request.method,
+            path = fpath,
+            headers = headers,
+            params = params,
+            content = body
         )
         logger.info(f"Live Mode: {request.method} /{path}")
         saverecord(
             db =  db,
             method = request.method,
-            path = f"/{path}",
+            path = fpath,
             status_code = response.status_code,
             response_body = response.text
         )
 
-        return response.json()
+        return Response(
+            content = response.content,
+            status_code = response.status_code,
+            media = response.headers.get("content-type")
+        )
     
-    except httpx.HTTPError:
-        logger.info(f"Shadow Mode: {request.method} /{path}")
+    except (httpx.HTTPError, Exception) as e:
+        logger.error(f"Upstream Error/Timeout: {str(e)}. Switching to Shadow Mode.")
+        logger.info(f"Shadow Mode: {request.method} /{fpath}")
         shadow = get_shadow_response(
             db = db,
             method = request.method,
-            path = f"/{path}"
+            path = fpath
         )
         if shadow:
             return JSONResponse(

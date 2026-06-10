@@ -10,10 +10,6 @@ async def forwardrequest(
         content: bytes = None
 ):
     url = f"{TARGET_URL}{path}"
-    
-    #Strip host header to avoid TLS verif at upstream
-    if headers and "host" in headers:
-        headers = {k: v for k, v in headers.items() if k.lower() != "host"}
 
     async with httpx.AsyncClient() as client:
         response = await client.request(
@@ -21,7 +17,8 @@ async def forwardrequest(
             url = url,
             headers = headers,
             params = params,
-            content = content
+            content = content,
+            timeout = 10.0
         )
     
     return response

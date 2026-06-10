@@ -2,11 +2,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import Session
+from app.core.config import settings
 
-DATABASE_URL = "sqlite:///shadow.db"
+DB_URL = settings.db_url
 
 engine = create_engine(
-    DATABASE_URL,
+    DB_URL,
     connect_args = {"check_same_thread": False}
 )
 

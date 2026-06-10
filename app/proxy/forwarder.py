@@ -21,7 +21,7 @@ async def forwardrequest(
             url = url,
             headers = headers,
             params = params,
-            conent = content
+            content = content
         )
     
     return response
